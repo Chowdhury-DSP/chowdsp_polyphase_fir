@@ -80,7 +80,8 @@ static void test_interp (int n_channels, int n_samples)
                        half_buffer_out.getArrayOfWritePointers(),
                        n_channels,
                        block_size_1,
-                       scratch_data);
+                       scratch_data,
+                       true);
 
         half_buffer_in = chowdsp::BufferView { buffer_in, block_size_1, block_size_2 };
         half_buffer_out = chowdsp::BufferView { test_buffer_out, block_size_1 * factor, block_size_2 * factor };
@@ -89,7 +90,8 @@ static void test_interp (int n_channels, int n_samples)
                        half_buffer_out.getArrayOfWritePointers(),
                        n_channels,
                        block_size_2,
-                       scratch_data);
+                       scratch_data,
+                       true);
     }
 
     for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),

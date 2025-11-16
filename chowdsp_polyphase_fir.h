@@ -47,7 +47,8 @@ void process (struct Polyphase_FIR_State* state,
               float* const* out,
               int n_channels,
               int n_samples_in,
-              void* scratch_data);
+              void* scratch_data,
+              bool use_avx);
 
 #ifdef __cplusplus
 } // namespace chowdsp::polyphase_fir

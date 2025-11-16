@@ -7,6 +7,22 @@
 #include <cstring>
 #include <tuple>
 
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+#include "simd/chowdsp_polyphase_fir_impl_sse.cpp"
+#if CHOWDSP_POLYPHASE_FIR_COMPILER_SUPPORTS_AVX
+namespace chowdsp::polyphase_fir::avx
+{
+void process_fir_interp (const Polyphase_FIR_State* state,
+                         const float* ch_state,
+                         float* y_data,
+                         int n_samples_in,
+                         float* scratch);
+} // namespace chowdsp::polyphase_fir::avx
+#endif
+#elif defined(__ARM_NEON__) || defined(_M_ARM64)
+#include "simd/chowdsp_fft_impl_neon.cpp"
+#endif
+
 namespace chowdsp::polyphase_fir
 {
 static int min_int (int a, int b)
@@ -92,6 +108,9 @@ Polyphase_FIR_State* init (int n_channels, int n_taps, int factor, int max_sampl
 
 void load_coeffs (Polyphase_FIR_State* state, const float* coeffs, int n_taps)
 {
+    const auto coeffs_bytes = state->taps_per_filter_padded * state->factor * sizeof (float);
+    std::memset (state->coeffs, 0, coeffs_bytes);
+
     for (int i = 0; i < state->factor; ++i)
     {
         auto* filter_coeffs = state->coeffs + state->taps_per_filter_padded * i;
@@ -124,7 +143,8 @@ void process (Polyphase_FIR_State* state,
               float* const* out,
               int n_channels,
               int n_samples_in,
-              void* scratch_data)
+              void* scratch_data,
+              [[maybe_unused]] bool use_avx)
 {
     auto* scratch_start = (float*) scratch_data;
     const auto num_samples_out = n_samples_in * state->factor;
@@ -141,22 +161,13 @@ void process (Polyphase_FIR_State* state,
         }
 
         // apply filters
-        auto* y_data = out[ch];
-        for (int filter_idx = 0; filter_idx < state->factor; ++filter_idx)
-        {
-            auto* scratch = scratch_start;
-            const auto* coeffs = state->coeffs + filter_idx * state->taps_per_filter_padded;
-            for (int n = 0; n < n_samples_in; ++n)
-            {
-                scratch[n] = 0.0f;
-                for (int k = 0; k < state->taps_per_filter_padded; ++k)
-                    scratch[n] += coeffs[k] * ch_state[n + k];
-            }
-
-            for (int n = 0; n < n_samples_in; ++n)
-                y_data[n * state->factor + filter_idx] = scratch[n];
-        }
-
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+        if (use_avx)
+            avx::process_fir_interp (state, ch_state, out[ch], n_samples_in, scratch_start);
+        else
+            sse::process_fir_interp (state, ch_state, out[ch], n_samples_in, scratch_start);
+#else
+#endif
         { // save channel state for next buffer
             auto* scratch = scratch_start;
             const auto samples_to_save = state->taps_per_filter_padded - 1;
