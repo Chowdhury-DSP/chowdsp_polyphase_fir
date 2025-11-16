@@ -1,5 +1,5 @@
-#include <chowdsp_polyphase_fir.h>
 #include <chowdsp_filters/chowdsp_filters.h>
+#include <chowdsp_polyphase_fir.h>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -57,7 +57,7 @@ static void test_interp (int n_channels, int n_samples)
         static constexpr int alignment = 32;
 
         const auto block_size_1 = n_samples / 2;
-        const auto block_size_2 = n_samples  - block_size_1;
+        const auto block_size_2 = n_samples - block_size_1;
         const auto max_block_size = std::max (block_size_1, block_size_2);
 
         const auto persistent_bytes = pfir::persistent_bytes_required (n_channels, n_taps, factor, max_block_size, alignment);
@@ -93,7 +93,7 @@ static void test_interp (int n_channels, int n_samples)
     }
 
     for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
-                                                                                   std::as_const (test_buffer_out)))
+                                                                                     std::as_const (test_buffer_out)))
     {
         for (const auto [ref, test] : chowdsp::zip (ref_data, test_data))
             REQUIRE (test == Catch::Approx { ref }.margin (1.0e-6));
@@ -102,10 +102,16 @@ static void test_interp (int n_channels, int n_samples)
 
 TEST_CASE ("Polyphase Interpolation")
 {
-    test_interp<1> (1, 16);
-    test_interp<2> (1, 16);
-    test_interp<3> (1, 16);
-    test_interp<1> (2, 16);
-    test_interp<2> (2, 16);
-    test_interp<3> (2, 16);
+    const int channels[] = { 1, 2 };
+    const int samples[] = { 16, 127 };
+
+    for (auto n_channels : channels)
+    {
+        for (auto n_samples : samples)
+        {
+            test_interp<1> (n_channels, n_samples);
+            test_interp<2> (n_channels, n_samples);
+            test_interp<3> (n_channels, n_samples);
+        }
+    }
 }
