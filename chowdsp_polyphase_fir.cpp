@@ -106,7 +106,7 @@ void load_coeffs (Polyphase_FIR_State* state, const float* coeffs, int n_taps)
 
 void reset (Polyphase_FIR_State* state)
 {
-    const auto state_bytes = state->taps_per_filter_padded * state->factor * state->n_channels * sizeof (float);
+    const auto state_bytes = state->state_per_channel_padded * state->n_channels * sizeof (float);
     std::memset (state->state, 0, state_bytes);
 }
 

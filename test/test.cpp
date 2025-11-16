@@ -107,5 +107,5 @@ TEST_CASE ("Polyphase Interpolation")
     test_interp<3> (1, 16);
     test_interp<1> (2, 16);
     test_interp<2> (2, 16);
-    // test_interp<3> (2, 16);
+    test_interp<3> (2, 16);
 }
