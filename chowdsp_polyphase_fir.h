@@ -10,24 +10,14 @@ namespace chowdsp::polyphase_fir
 #include <stddef.h>
 #endif
 
-// TODO:
-// decimation vs. interpolation
-// decimation/interpolation factor?
-
-/* polyphase mode */
-typedef enum
-{
-    POLYPHASE_INTERPOLATE,
-    POLYPHASE_DECIMATE,
-} pohyphase_mode_t;
-
 struct Polyphase_FIR_State
 {
     float* coeffs {};
-    float* state {};
+    float* interp_state {};
+    float* decim_state {};
     int n_channels {};
     int taps_per_filter_padded {};
-    int state_per_channel_padded {};
+    int state_per_filter_padded {};
     int factor {};
     // something to determine whether to use AVX or SSE?
 };
@@ -42,13 +32,21 @@ void reset (struct Polyphase_FIR_State* state);
 
 size_t scratch_bytes_required (int n_taps, int factor, int max_samples_in, int alignment);
 
-void process (struct Polyphase_FIR_State* state,
-              const float* const* in,
-              float* const* out,
-              int n_channels,
-              int n_samples_in,
-              void* scratch_data,
-              bool use_avx);
+void process_interpolate (struct Polyphase_FIR_State* state,
+                          const float* const* in,
+                          float* const* out,
+                          int n_channels,
+                          int n_samples_in,
+                          void* scratch_data,
+                          bool use_avx);
+
+void process_decimate (struct Polyphase_FIR_State* state,
+                       const float* const* in,
+                       float* const* out,
+                       int n_channels,
+                       int n_samples_in,
+                       void* scratch_data,
+                       bool use_avx);
 
 #ifdef __cplusplus
 } // namespace chowdsp::polyphase_fir
