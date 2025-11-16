@@ -45,7 +45,7 @@ static void test_interp (int n_channels, int n_samples)
 
     chowdsp::Buffer<float> ref_buffer_out { n_channels, n_samples * factor };
     {
-        chowdsp::ArenaAllocator<> arena { 8192 };
+        chowdsp::ArenaAllocator<> arena { 1 << 14 };
         chowdsp::FIRPolyphaseInterpolator<float, factor, n_taps> ref_filter;
         ref_filter.prepare (n_channels, n_samples, coeffs, arena);
         ref_filter.processBlock (buffer_in, ref_buffer_out);
@@ -102,10 +102,10 @@ static void test_interp (int n_channels, int n_samples)
 
 TEST_CASE ("Polyphase Interpolation")
 {
-    // test_interp<1> (1, 16);
-    // test_interp<2> (1, 16);
-    // test_interp<3> (1, 16);
-    // test_interp<1> (2, 16);
-    // test_interp<2> (2, 16);
-    test_interp<3> (2, 16);
+    test_interp<1> (1, 16);
+    test_interp<2> (1, 16);
+    test_interp<3> (1, 16);
+    test_interp<1> (2, 16);
+    test_interp<2> (2, 16);
+    // test_interp<3> (2, 16);
 }

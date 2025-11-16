@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 project(chowdsp_polyphase_fir)
 
+
+if(CHOWDSP_POLYPHASE_FIR_ASAN)
+    message(STATUS "Setting flags for address sanitizer: -fsanitize=address -g")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+
 add_library(chowdsp_polyphase_fir STATIC)
 target_sources(chowdsp_polyphase_fir
     PRIVATE
@@ -8,7 +16,6 @@ target_sources(chowdsp_polyphase_fir
         chowdsp_polyphase_fir.cpp
 )
 target_include_directories(chowdsp_polyphase_fir PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# target_compile_definitions(chowdsp_polyphase_fir PRIVATE _USE_MATH_DEFINES=1)
 target_compile_features(chowdsp_polyphase_fir PRIVATE cxx_std_20)
 
 include(CheckCXXCompilerFlag)
