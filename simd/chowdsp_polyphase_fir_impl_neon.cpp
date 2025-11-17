@@ -20,7 +20,7 @@ static void process_fir_interp (const Polyphase_FIR_State* state,
             float32x4_t accum_0 {};
             float32x4_t accum_1 {};
             int k = 0;
-            for (; k < n_taps_v; k += 2)
+            for (; k + 1 < n_taps_v; k += 2)
             {
                 const auto z0 = vld1q_f32 (ch_state + n + k * v_size);
                 accum_0 = vfmaq_f32 (accum_0, z0, filter_coeffs[k]);
@@ -62,7 +62,7 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
         float32x4_t accum_0 {};
         float32x4_t accum_1 {};
         int k = 0;
-        for (; k < n_taps_v; k += 2)
+        for (; k + 1 < n_taps_v; k += 2)
         {
             const auto z0 = vld1q_f32 (filter_state + n + k * v_size);
             accum_0 = vfmaq_f32 (accum_0, z0, filter_coeffs[k]);
@@ -87,7 +87,7 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
             float32x4_t accum_0 {};
             float32x4_t accum_1 {};
             int k = 0;
-            for (; k < n_taps_v; k += 2)
+            for (; k + 1 < n_taps_v; k += 2)
             {
                 const auto z0 = vld1q_f32 (filter_state + n + k * v_size);
                 accum_0 = vfmaq_f32 (accum_0, z0, filter_coeffs[k]);

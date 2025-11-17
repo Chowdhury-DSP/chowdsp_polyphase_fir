@@ -4,8 +4,8 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-static constexpr int n_taps = 27;
-static constexpr float coeffs[27] {
+static constexpr int n_taps = 25;
+static constexpr float coeffs[n_taps] {
     0.000410322870809364f,
     -0.000000000000000001f,
     -0.002230285518524044f,
@@ -31,8 +31,6 @@ static constexpr float coeffs[27] {
     0.007100857132041438f,
     0.000000000000000003f,
     -0.002230285518524042f,
-    -0.000000000000000001f,
-    0.000410322870809363f,
 };
 
 template <int factor>
@@ -54,7 +52,11 @@ static void test_interp (int n_channels, int n_samples)
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples * factor };
     {
         namespace pfir = chowdsp::polyphase_fir;
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
         static constexpr int alignment = 32;
+#else
+        static constexpr int alignment = 16;
+#endif
 
         const auto block_size_1 = n_samples / 2;
         const auto block_size_2 = n_samples - block_size_1;
@@ -121,7 +123,11 @@ static void test_decim (int n_channels, int n_samples)
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples };
     {
         namespace pfir = chowdsp::polyphase_fir;
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
         static constexpr int alignment = 32;
+#else
+        static constexpr int alignment = 16;
+#endif
 
         const auto block_size_1 = n_samples / 2;
         const auto block_size_2 = n_samples - block_size_1;
