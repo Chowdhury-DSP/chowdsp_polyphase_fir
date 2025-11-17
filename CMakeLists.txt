@@ -74,4 +74,5 @@ endif()
 
 if(CHOWDSP_POLYPHASE_FIR_TESTING)
     add_subdirectory(test)
+    add_subdirectory(bench)
 endif()

@@ -143,9 +143,10 @@ void reset (Polyphase_FIR_State* state)
 
 size_t scratch_bytes_required (int n_taps, int factor, int max_samples_in, int alignment)
 {
+    const auto v_size = alignment / (int) sizeof (float);
     const auto taps_per_filter_padded = get_taps_per_filter_padded (n_taps, factor, alignment);
     const auto buffer_bytes_padded = round_to_next_multiple (
-        (taps_per_filter_padded + max_samples_in) * (int) sizeof (float),
+        max_int (taps_per_filter_padded + max_samples_in, max_samples_in * v_size) * (int) sizeof (float),
         alignment);
     return buffer_bytes_padded;
 }
@@ -232,7 +233,7 @@ void process_decimate (struct Polyphase_FIR_State* state,
         else
             sse::process_fir_decim (state, ch_state, out[ch], n_samples_out);
 #else
-        neon::process_fir_decim (state, ch_state, out[ch], n_samples_out);
+        neon::process_fir_decim (state, ch_state, out[ch], n_samples_out, scratch_start);
 #endif
 
         { // save channel state for next buffer
