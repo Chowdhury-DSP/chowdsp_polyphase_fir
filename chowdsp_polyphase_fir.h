@@ -19,7 +19,6 @@ struct Polyphase_FIR_State
     int taps_per_filter_padded {};
     int state_per_filter_padded {};
     int factor {};
-    // something to determine whether to use AVX or SSE?
 };
 
 size_t persistent_bytes_required (int n_channels, int n_taps, int factor, int max_samples_in, int alignment);

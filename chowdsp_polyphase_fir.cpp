@@ -24,7 +24,7 @@ void process_fir_decim (const Polyphase_FIR_State* state,
 } // namespace chowdsp::polyphase_fir::avx
 #endif
 #elif defined(__ARM_NEON__) || defined(_M_ARM64)
-#include "simd/chowdsp_fft_impl_neon.cpp"
+#include "simd/chowdsp_polyphase_fir_impl_neon.cpp"
 #endif
 
 namespace chowdsp::polyphase_fir
@@ -179,6 +179,7 @@ void process_interpolate (Polyphase_FIR_State* state,
         else
             sse::process_fir_interp (state, ch_state, out[ch], n_samples_in, scratch_start);
 #else
+        neon::process_fir_interp (state, ch_state, out[ch], n_samples_in, scratch_start);
 #endif
 
         { // save channel state for next buffer
@@ -231,6 +232,7 @@ void process_decimate (struct Polyphase_FIR_State* state,
         else
             sse::process_fir_decim (state, ch_state, out[ch], n_samples_out);
 #else
+        neon::process_fir_decim (state, ch_state, out[ch], n_samples_out);
 #endif
 
         { // save channel state for next buffer

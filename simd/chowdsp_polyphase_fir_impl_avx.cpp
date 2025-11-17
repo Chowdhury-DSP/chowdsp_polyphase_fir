@@ -1,7 +1,7 @@
 #include "../chowdsp_polyphase_fir.h"
-#include <immintrin.h>
 
 #if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+#include <immintrin.h>
 
 namespace chowdsp::polyphase_fir::avx
 {
