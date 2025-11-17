@@ -41,11 +41,13 @@ void process_fir_interp (const Polyphase_FIR_State* state,
 void process_fir_decim (const Polyphase_FIR_State* state,
                         const float* ch_state,
                         float* y_data,
-                        int n_samples_out)
+                        int n_samples_out,
+                        float* scratch)
 {
     static constexpr int v_size = 8;
     const auto n_taps_v = state->taps_per_filter_padded / v_size;
     const auto* coeffs_v = reinterpret_cast<const __m256*> (state->coeffs);
+    auto* scratch_v = reinterpret_cast<__m256*> (scratch);
     const auto one_avx = _mm256_set1_ps (1.0f);
 
     int filter_idx = 0;
@@ -59,10 +61,7 @@ void process_fir_decim (const Polyphase_FIR_State* state,
             const auto z = _mm256_loadu_ps (filter_state + n + k * v_size);
             accum = _mm256_fmadd_ps (z, filter_coeffs[k], accum);
         }
-        __m256 rr = _mm256_dp_ps (accum, one_avx, 0xff);
-        __m256 tmp = _mm256_permute2f128_ps (rr, rr, 1);
-        rr = _mm256_add_ps (rr, tmp);
-        y_data[n] = _mm256_cvtss_f32 (rr);
+        scratch_v[n] = accum;
     }
 
     for (filter_idx = 1; filter_idx < state->factor; ++filter_idx)
@@ -77,11 +76,16 @@ void process_fir_decim (const Polyphase_FIR_State* state,
                 const auto z = _mm256_loadu_ps (filter_state + n + k * v_size);
                 accum = _mm256_fmadd_ps (z, filter_coeffs[k], accum);
             }
-            __m256 rr = _mm256_dp_ps (accum, one_avx, 0xff);
-            __m256 tmp = _mm256_permute2f128_ps (rr, rr, 1);
-            rr = _mm256_add_ps (rr, tmp);
-            y_data[n] += _mm256_cvtss_f32 (rr);
+            scratch_v[n] = _mm256_add_ps (scratch_v[n], accum);
         }
+    }
+
+    for (int n = 0; n < n_samples_out; ++n)
+    {
+        __m256 rr = _mm256_dp_ps (scratch_v[n], one_avx, 0xff);
+        __m256 tmp = _mm256_permute2f128_ps (rr, rr, 1);
+        rr = _mm256_add_ps (rr, tmp);
+        y_data[n] += _mm256_cvtss_f32 (rr);
     }
 }
 } // namespace chowdsp::polyphase_fir::avx

@@ -34,7 +34,7 @@ static constexpr float coeffs[n_taps] {
 };
 
 template <int factor>
-static void test_interp (int n_channels, int n_samples)
+static void test_interp (int n_channels, int n_samples, bool use_avx)
 {
     chowdsp::Buffer<float> buffer_in { n_channels, n_samples };
     for (auto [ch, data] : chowdsp::buffer_iters::channels (buffer_in))
@@ -52,12 +52,7 @@ static void test_interp (int n_channels, int n_samples)
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples * factor };
     {
         namespace pfir = chowdsp::polyphase_fir;
-#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
-        static constexpr int alignment = 32;
-#else
-        static constexpr int alignment = 16;
-#endif
-
+        const auto alignment = use_avx ? 32 : 16;
         const auto block_size_1 = n_samples / 2;
         const auto block_size_2 = n_samples - block_size_1;
         const auto max_block_size = std::max (block_size_1, block_size_2);
@@ -70,7 +65,7 @@ static void test_interp (int n_channels, int n_samples)
                                  n_taps,
                                  factor,
                                  max_block_size,
-                                 arena.allocate_bytes (persistent_bytes, 32),
+                                 arena.allocate_bytes (persistent_bytes, alignment),
                                  alignment);
         pfir::load_coeffs (state, coeffs, n_taps);
 
@@ -83,7 +78,7 @@ static void test_interp (int n_channels, int n_samples)
                                    n_channels,
                                    block_size_1,
                                    scratch_data,
-                                   true);
+                                   use_avx);
 
         half_buffer_in = chowdsp::BufferView { buffer_in, block_size_1, block_size_2 };
         half_buffer_out = chowdsp::BufferView { test_buffer_out, block_size_1 * factor, block_size_2 * factor };
@@ -93,7 +88,7 @@ static void test_interp (int n_channels, int n_samples)
                                    n_channels,
                                    block_size_2,
                                    scratch_data,
-                                   true);
+                                   use_avx);
     }
 
     for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
@@ -105,7 +100,7 @@ static void test_interp (int n_channels, int n_samples)
 }
 
 template <int factor>
-static void test_decim (int n_channels, int n_samples)
+static void test_decim (int n_channels, int n_samples, bool use_avx)
 {
     chowdsp::Buffer<float> buffer_in { n_channels, n_samples * factor };
     for (auto [ch, data] : chowdsp::buffer_iters::channels (buffer_in))
@@ -123,12 +118,7 @@ static void test_decim (int n_channels, int n_samples)
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples };
     {
         namespace pfir = chowdsp::polyphase_fir;
-#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
-        static constexpr int alignment = 32;
-#else
-        static constexpr int alignment = 16;
-#endif
-
+        const auto alignment = use_avx ? 32 : 16;
         const auto block_size_1 = n_samples / 2;
         const auto block_size_2 = n_samples - block_size_1;
         const auto max_block_size = std::max (block_size_1, block_size_2);
@@ -141,7 +131,7 @@ static void test_decim (int n_channels, int n_samples)
                                  n_taps,
                                  factor,
                                  max_block_size,
-                                 arena.allocate_bytes (persistent_bytes, 32),
+                                 arena.allocate_bytes (persistent_bytes, alignment),
                                  alignment);
         pfir::load_coeffs (state, coeffs, n_taps);
 
@@ -154,7 +144,7 @@ static void test_decim (int n_channels, int n_samples)
                                 n_channels,
                                 block_size_1 * factor,
                                 scratch_data,
-                                true);
+                                use_avx);
 
         half_buffer_in = chowdsp::BufferView { buffer_in, block_size_1 * factor, block_size_2 * factor };
         half_buffer_out = chowdsp::BufferView { test_buffer_out, block_size_1, block_size_2 };
@@ -164,7 +154,7 @@ static void test_decim (int n_channels, int n_samples)
                                 n_channels,
                                 block_size_2 * factor,
                                 scratch_data,
-                                true);
+                                use_avx);
     }
 
     for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
@@ -177,32 +167,48 @@ static void test_decim (int n_channels, int n_samples)
 
 TEST_CASE ("Polyphase Interpolation")
 {
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+    const bool use_avx[] = { false, true };
+#else
+    const bool use_avx[] = { false };
+#endif
     const int channels[] = { 1, 2 };
     const int samples[] = { 16, 127 };
 
-    for (auto n_channels : channels)
+    for (auto avx : use_avx)
     {
-        for (auto n_samples : samples)
+        for (auto n_channels : channels)
         {
-            test_interp<1> (n_channels, n_samples);
-            test_interp<2> (n_channels, n_samples);
-            test_interp<3> (n_channels, n_samples);
+            for (auto n_samples : samples)
+            {
+                test_interp<1> (n_channels, n_samples, avx);
+                test_interp<2> (n_channels, n_samples, avx);
+                test_interp<3> (n_channels, n_samples, avx);
+            }
         }
     }
 }
 
 TEST_CASE ("Polyphase Decimation")
 {
+#if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+    const bool use_avx[] = { false, true };
+#else
+    const bool use_avx[] = { false };
+#endif
     const int channels[] = { 1, 2 };
     const int samples[] = { 16, 127 };
 
-    for (auto n_channels : channels)
+    for (auto avx : use_avx)
     {
-        for (auto n_samples : samples)
+        for (auto n_channels : channels)
         {
-            test_decim<1> (n_channels, n_samples);
-            test_decim<2> (n_channels, n_samples);
-            test_decim<3> (n_channels, n_samples);
+            for (auto n_samples : samples)
+            {
+                test_decim<1> (n_channels, n_samples, avx);
+                test_decim<2> (n_channels, n_samples, avx);
+                test_decim<3> (n_channels, n_samples, avx);
+            }
         }
     }
 }

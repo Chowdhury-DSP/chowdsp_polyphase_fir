@@ -20,7 +20,8 @@ void process_fir_interp (const Polyphase_FIR_State* state,
 void process_fir_decim (const Polyphase_FIR_State* state,
                         const float* ch_state,
                         float* y_data,
-                        int n_samples_out);
+                        int n_samples_out,
+                        float* scratch);
 } // namespace chowdsp::polyphase_fir::avx
 #endif
 #elif defined(__ARM_NEON__) || defined(_M_ARM64)
@@ -229,9 +230,9 @@ void process_decimate (struct Polyphase_FIR_State* state,
         // apply filters
 #if defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
         if (use_avx)
-            avx::process_fir_decim (state, ch_state, out[ch], n_samples_out);
+            avx::process_fir_decim (state, ch_state, out[ch], n_samples_out, scratch_start);
         else
-            sse::process_fir_decim (state, ch_state, out[ch], n_samples_out);
+            sse::process_fir_decim (state, ch_state, out[ch], n_samples_out, scratch_start);
 #else
         neon::process_fir_decim (state, ch_state, out[ch], n_samples_out, scratch_start);
 #endif
