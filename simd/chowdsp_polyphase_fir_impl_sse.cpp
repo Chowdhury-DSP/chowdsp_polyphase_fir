@@ -57,10 +57,6 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
             accum = _mm_add_ps (accum, _mm_mul_ps (z, filter_coeffs[k]));
         }
         scratch_v[n] = accum;
-
-        // auto rr = _mm_add_ps (_mm_shuffle_ps (accum, accum, 0x4e), accum);
-        // rr = _mm_add_ps (rr, _mm_shuffle_ps (rr, rr, 0xb1));
-        // y_data[n] = _mm_cvtss_f32 (rr);
     }
 
     for (filter_idx = 1; filter_idx < state->factor; ++filter_idx)
@@ -76,10 +72,6 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
                 accum = _mm_add_ps (accum, _mm_mul_ps (z, filter_coeffs[k]));
             }
             scratch_v[n] = _mm_add_ps (scratch_v[n], accum);
-
-            // auto rr = _mm_add_ps (_mm_shuffle_ps (accum, accum, 0x4e), accum);
-            // rr = _mm_add_ps (rr, _mm_shuffle_ps (rr, rr, 0xb1));
-            // y_data[n] += _mm_cvtss_f32 (rr);
         }
     }
 

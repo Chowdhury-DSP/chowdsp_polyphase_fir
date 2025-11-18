@@ -101,7 +101,6 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
             }
 
             scratch_v[n] = vaddq_f32 (scratch_v[n], vaddq_f32 (accum_0, accum_1));
-            // scratch_v[n] += vaddq_f32 (accum_0, accum_1);
         }
     }
 

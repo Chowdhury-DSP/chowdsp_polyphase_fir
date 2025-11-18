@@ -251,11 +251,11 @@ void process_decimate (struct Polyphase_FIR_State* state,
             for (filter_idx = 1; filter_idx < state->factor; ++filter_idx)
             {
                 filter_state = ch_state + filter_idx * state->state_per_filter_padded;
-                samples_to_save = state->taps_per_filter_padded;
+                samples_to_save = state->taps_per_filter_padded - 1;
                 std::memcpy (scratch,
-                             filter_state + n_samples_out,
+                             filter_state + n_samples_out + 1,
                              samples_to_save * sizeof (float));
-                std::memcpy (filter_state,
+                std::memcpy (filter_state + 1,
                              scratch,
                              samples_to_save * sizeof (float));
             }
