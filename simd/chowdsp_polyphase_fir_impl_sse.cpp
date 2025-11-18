@@ -80,7 +80,7 @@ static void process_fir_decim (const Polyphase_FIR_State* state,
         const auto accum = scratch_v[n];
         auto rr = _mm_add_ps (_mm_shuffle_ps (accum, accum, 0x4e), accum);
         rr = _mm_add_ps (rr, _mm_shuffle_ps (rr, rr, 0xb1));
-        y_data[n] += _mm_cvtss_f32 (rr);
+        y_data[n] = _mm_cvtss_f32 (rr);
     }
 }
 } // namespace chowdsp::polyphase_fir::sse

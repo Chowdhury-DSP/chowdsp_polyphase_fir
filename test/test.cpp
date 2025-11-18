@@ -39,37 +39,37 @@ static void test_interp (int n_channels, int n_samples, bool use_avx)
     chowdsp::Buffer<float> buffer_in { n_channels, n_samples };
     for (auto [ch, data] : chowdsp::buffer_iters::channels (buffer_in))
         for (auto [n, x] : chowdsp::enumerate (data))
-            x = static_cast<float> (n + (size_t) ch);
+            x = static_cast<float> (n + (size_t) ch + 1);
+
+    chowdsp::ArenaAllocator<> ref_arena { 1 << 14 };
+    chowdsp::FIRPolyphaseInterpolator<float, factor, n_taps> ref_filter;
+    ref_filter.prepare (n_channels, n_samples, coeffs, ref_arena);
+
+    namespace pfir = chowdsp::polyphase_fir;
+    const auto alignment = use_avx ? 32 : 16;
+    const auto block_size_1 = n_samples / 2;
+    const auto block_size_2 = n_samples - block_size_1;
+    const auto max_block_size = std::max (block_size_1, block_size_2);
+
+    const auto persistent_bytes = pfir::persistent_bytes_required (n_channels, n_taps, factor, max_block_size, alignment);
+    const auto scratch_bytes = pfir::scratch_bytes_required (n_taps, factor, max_block_size, alignment);
+    chowdsp::ArenaAllocator<> arena { persistent_bytes + scratch_bytes + alignment };
+
+    auto state = pfir::init (n_channels,
+                             n_taps,
+                             factor,
+                             max_block_size,
+                             arena.allocate_bytes (persistent_bytes, alignment),
+                             alignment);
+    pfir::load_coeffs (state, coeffs, n_taps);
+    auto* scratch_data = arena.allocate_bytes (scratch_bytes, alignment);
 
     chowdsp::Buffer<float> ref_buffer_out { n_channels, n_samples * factor };
-    {
-        chowdsp::ArenaAllocator<> arena { 1 << 14 };
-        chowdsp::FIRPolyphaseInterpolator<float, factor, n_taps> ref_filter;
-        ref_filter.prepare (n_channels, n_samples, coeffs, arena);
-        ref_filter.processBlock (buffer_in, ref_buffer_out);
-    }
-
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples * factor };
+    for (int i = 0; i < 4; ++i)
     {
-        namespace pfir = chowdsp::polyphase_fir;
-        const auto alignment = use_avx ? 32 : 16;
-        const auto block_size_1 = n_samples / 2;
-        const auto block_size_2 = n_samples - block_size_1;
-        const auto max_block_size = std::max (block_size_1, block_size_2);
+        ref_filter.processBlock (buffer_in, ref_buffer_out);
 
-        const auto persistent_bytes = pfir::persistent_bytes_required (n_channels, n_taps, factor, max_block_size, alignment);
-        const auto scratch_bytes = pfir::scratch_bytes_required (n_taps, factor, max_block_size, alignment);
-        chowdsp::ArenaAllocator<> arena { persistent_bytes + scratch_bytes + alignment };
-
-        auto state = pfir::init (n_channels,
-                                 n_taps,
-                                 factor,
-                                 max_block_size,
-                                 arena.allocate_bytes (persistent_bytes, alignment),
-                                 alignment);
-        pfir::load_coeffs (state, coeffs, n_taps);
-
-        auto* scratch_data = arena.allocate_bytes (scratch_bytes, alignment);
         auto half_buffer_in = chowdsp::BufferView { buffer_in, 0, block_size_1 };
         auto half_buffer_out = chowdsp::BufferView { test_buffer_out, 0, block_size_1 * factor };
         pfir::process_interpolate (state,
@@ -89,13 +89,13 @@ static void test_interp (int n_channels, int n_samples, bool use_avx)
                                    block_size_2,
                                    scratch_data,
                                    use_avx);
-    }
 
-    for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
-                                                                                     std::as_const (test_buffer_out)))
-    {
-        for (const auto [ref, test] : chowdsp::zip (ref_data, test_data))
-            REQUIRE (test == Catch::Approx { ref }.margin (1.0e-6));
+        for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
+                                                                                         std::as_const (test_buffer_out)))
+        {
+            for (const auto [ref, test] : chowdsp::zip (ref_data, test_data))
+                REQUIRE (test == Catch::Approx { ref }.margin (1.0e-6));
+        }
     }
 }
 
@@ -105,37 +105,37 @@ static void test_decim (int n_channels, int n_samples, bool use_avx)
     chowdsp::Buffer<float> buffer_in { n_channels, n_samples * factor };
     for (auto [ch, data] : chowdsp::buffer_iters::channels (buffer_in))
         for (auto [n, x] : chowdsp::enumerate (data))
-            x = static_cast<float> (n + (size_t) ch);
+            x = static_cast<float> (n + (size_t) ch + 1);
+
+    chowdsp::ArenaAllocator<> ref_arena { 1 << 14 };
+    chowdsp::FIRPolyphaseDecimator<float, factor, n_taps> ref_filter;
+    ref_filter.prepare (n_channels, n_samples * factor, coeffs, ref_arena);
+
+    namespace pfir = chowdsp::polyphase_fir;
+    const auto alignment = use_avx ? 32 : 16;
+    const auto block_size_1 = n_samples / 2;
+    const auto block_size_2 = n_samples - block_size_1;
+    const auto max_block_size = std::max (block_size_1, block_size_2);
+
+    const auto persistent_bytes = pfir::persistent_bytes_required (n_channels, n_taps, factor, max_block_size, alignment);
+    const auto scratch_bytes = pfir::scratch_bytes_required (n_taps, factor, max_block_size, alignment);
+    chowdsp::ArenaAllocator<> arena { persistent_bytes + scratch_bytes + alignment };
+
+    auto state = pfir::init (n_channels,
+                             n_taps,
+                             factor,
+                             max_block_size,
+                             arena.allocate_bytes (persistent_bytes, alignment),
+                             alignment);
+    pfir::load_coeffs (state, coeffs, n_taps);
+    auto* scratch_data = arena.allocate_bytes (scratch_bytes, alignment);
 
     chowdsp::Buffer<float> ref_buffer_out { n_channels, n_samples };
-    {
-        chowdsp::ArenaAllocator<> arena { 1 << 14 };
-        chowdsp::FIRPolyphaseDecimator<float, factor, n_taps> ref_filter;
-        ref_filter.prepare (n_channels, n_samples * factor, coeffs, arena);
-        ref_filter.processBlock (buffer_in, ref_buffer_out);
-    }
-
     chowdsp::Buffer<float> test_buffer_out { n_channels, n_samples };
+    for (int i = 0; i < 4; ++i)
     {
-        namespace pfir = chowdsp::polyphase_fir;
-        const auto alignment = use_avx ? 32 : 16;
-        const auto block_size_1 = n_samples / 2;
-        const auto block_size_2 = n_samples - block_size_1;
-        const auto max_block_size = std::max (block_size_1, block_size_2);
+        ref_filter.processBlock (buffer_in, ref_buffer_out);
 
-        const auto persistent_bytes = pfir::persistent_bytes_required (n_channels, n_taps, factor, max_block_size, alignment);
-        const auto scratch_bytes = pfir::scratch_bytes_required (n_taps, factor, max_block_size, alignment);
-        chowdsp::ArenaAllocator<> arena { persistent_bytes + scratch_bytes + alignment };
-
-        auto state = pfir::init (n_channels,
-                                 n_taps,
-                                 factor,
-                                 max_block_size,
-                                 arena.allocate_bytes (persistent_bytes, alignment),
-                                 alignment);
-        pfir::load_coeffs (state, coeffs, n_taps);
-
-        auto* scratch_data = arena.allocate_bytes (scratch_bytes, alignment);
         auto half_buffer_in = chowdsp::BufferView { buffer_in, 0, block_size_1 * factor };
         auto half_buffer_out = chowdsp::BufferView { test_buffer_out, 0, block_size_1 };
         pfir::process_decimate (state,
@@ -155,13 +155,13 @@ static void test_decim (int n_channels, int n_samples, bool use_avx)
                                 block_size_2 * factor,
                                 scratch_data,
                                 use_avx);
-    }
 
-    for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
-                                                                                     std::as_const (test_buffer_out)))
-    {
-        for (const auto [ref, test] : chowdsp::zip (ref_data, test_data))
-            REQUIRE (test == Catch::Approx { ref }.margin (1.0e-6));
+        for (const auto [ch, ref_data, test_data] : chowdsp::buffer_iters::zip_channels (std::as_const (ref_buffer_out),
+                                                                                         std::as_const (test_buffer_out)))
+        {
+            for (const auto [ref, test] : chowdsp::zip (ref_data, test_data))
+                REQUIRE (test == Catch::Approx { ref }.margin (1.0e-6));
+        }
     }
 }
 

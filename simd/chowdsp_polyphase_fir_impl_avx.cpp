@@ -85,7 +85,7 @@ void process_fir_decim (const Polyphase_FIR_State* state,
         __m256 rr = _mm256_dp_ps (scratch_v[n], one_avx, 0xff);
         __m256 tmp = _mm256_permute2f128_ps (rr, rr, 1);
         rr = _mm256_add_ps (rr, tmp);
-        y_data[n] += _mm256_cvtss_f32 (rr);
+        y_data[n] = _mm256_cvtss_f32 (rr);
     }
 }
 } // namespace chowdsp::polyphase_fir::avx
