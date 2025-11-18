@@ -210,7 +210,7 @@ void process_decimate (struct Polyphase_FIR_State* state,
 
     for (int ch = 0; ch < n_channels; ++ch)
     {
-        auto* ch_state = state->interp_state + ch * (state->state_per_filter_padded * state->factor);
+        auto* ch_state = state->decim_state + ch * (state->state_per_filter_padded * state->factor);
 
         { // copy x_data into ch_state
             auto* x_data = in[ch];
